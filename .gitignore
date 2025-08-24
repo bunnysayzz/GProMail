@@ -1,0 +1,77 @@
+# GProMail - Git Ignore File
+# =========================
+
+# Build Artifacts
+build/
+*.app
+*.dmg
+*.ipa
+*.xcarchive
+DerivedData/
+
+# Sparkle Private Keys (NEVER COMMIT!)
+sparkle_keys/eddsa_priv.pem
+sparkle_keys/*.pem
+!sparkle_keys/eddsa_pub.pem
+
+# Sparkle Tools (Downloaded binaries)
+sparkle_tools/
+
+# Xcode
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+!default.pbxuser
+!default.mode1v3
+!default.mode2v3
+!default.perspectivev3
+xcuserdata/
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+*.xcworkspace
+!*.xcworkspace/contents.xcworkspacedata
+!*.xcworkspace/xcshareddata/
+
+# macOS
+.DS_Store
+.DS_Store?
+.Spotlight-V100
+.Trashes
+Icon?
+._*
+
+# Temporary Files
+*.tmp
+*.temp
+*~
+.#*
+
+# Logs
+*.log
+
+# Archives & Compressed Files
+*.tar.gz
+*.zip
+*.7z
+
+# IDE Files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Certificate & Signing Files (if any)
+*.p12
+*.mobileprovision
+*.certSigningRequest
+
+# Local Development
+.env
+.env.local
+local.properties
+
+# Custom Build Outputs
+dist/
+release/

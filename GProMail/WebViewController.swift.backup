@@ -1,0 +1,349 @@
+//
+//  WebViewController.swift
+//  gInbox
+//
+//  Created by Chen Asraf on 11/11/14.
+//  Copyright (c) 2014 Chen Asraf. All rights reserved.
+//
+
+import Foundation
+import WebKit
+import AppKit
+import SystemConfiguration
+
+class NetworkReachability {
+    static let shared = NetworkReachability()
+    private let reachability = SCNetworkReachabilityCreateWithName(nil, "www.google.com")
+    
+    var isConnected: Bool {
+        var flags = SCNetworkReachabilityFlags()
+        SCNetworkReachabilityGetFlags(reachability!, &flags)
+        return isNetworkReachable(with: flags)
+    }
+    
+    private func isNetworkReachable(with flags: SCNetworkReachabilityFlags) -> Bool {
+        let isReachable = flags.contains(.reachable)
+        let needsConnection = flags.contains(.connectionRequired)
+        let canConnectAutomatically = flags.contains(.connectionOnDemand) || flags.contains(.connectionOnTraffic)
+        let canConnectWithoutUserInteraction = canConnectAutomatically && !flags.contains(.interventionRequired)
+        return isReachable && (!needsConnection || canConnectWithoutUserInteraction)
+    }
+}
+
+class WebViewController: NSViewController {
+    
+    // MARK: - Properties
+    private var webView: WKWebView!
+    private let settingsController = Settings(windowNibName: NSNib.Name("Settings"))
+    private var lastSuccessfulURL: URL?
+    private var isOfflineMode = false
+    private let webViewConfiguration: WKWebViewConfiguration = {
+        let config = WKWebViewConfiguration()
+        // Enable website data store for caching
+        config.websiteDataStore = .default()
+        // Set cache policy
+        config.preferences.setValue(true, forKey: "developerExtrasEnabled")
+        config.preferences.javaScriptEnabled = true
+        config.preferences.javaScriptCanOpenWindowsAutomatically = true
+        return config
+    }()
+    
+    // Constants
+    private let webUrl = "https://inbox.google.com"
+    private let offlineHTML = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; text-align: center; padding: 50px; color: #333; }
+            .offline-message { max-width: 500px; margin: 0 auto; padding: 20px; }
+            .retry-button { 
+                background: #1a73e8; 
+                color: white; 
+                border: none; 
+                padding: 10px 20px; 
+                border-radius: 4px; 
+                cursor: pointer; 
+                font-size: 14px;
+                margin-top: 20px;
+            }
+            .retry-button:hover { background: #1557b0; }
+        </style>
+    </head>
+    <body>
+        <div class="offline-message">
+            <h2>You're Offline</h2>
+            <p>We couldn't load Gmail because you're not connected to the internet.</p>
+            <button class="retry-button" onclick="window.webkit.messageHandlers.retry.postMessage('retry')">
+                Retry Connection
+            </button>
+        </div>
+    </body>
+    </html>
+    """
+    
+    // MARK: - Lifecycle
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        // Configure web view
+        setupWebView()
+        
+        // Set up JavaScript injection
+        injectConsoleLogging()
+        
+        // Register for app state notifications
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(handleAppWillResignActive),
+                                               name: NSApplication.willResignActiveNotification,
+                                               object: nil)
+        
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(handleAppDidBecomeActive),
+                                               name: NSApplication.didBecomeActiveNotification,
+                                               object: nil)
+        
+        if !Preferences.getBool(key: "afterFirstLaunch") {
+            Preferences.clearDefaults()
+            Preferences.setBool(key: "afterFirstLaunch", value: true)
+        }
+    }
+    
+    deinit {
+        // Clean up observers
+        NotificationCenter.default.removeObserver(self)
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: "consoleLog")
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: "retry")
+    }
+    
+    // MARK: - Memory Management
+    
+    @objc private func handleAppWillResignActive() {
+        // Save scroll position and other state
+        webView.evaluateJavaScript("window.scrollY") { [weak self] (result, error) in
+            if let scrollY = result as? CGFloat {
+                Preferences.setFloat(key: "scrollPosition", value: Float(scrollY))
+            }
+        }
+        
+        // Clear memory-intensive resources
+        webView.stopLoading()
+        
+        // Save current URL
+        if let url = webView.url?.absoluteString {
+            Preferences.setString(key: "lastURL", value: url)
+        }
+    }
+    
+    @objc private func handleAppDidBecomeActive() {
+        // Reload if coming back from background
+        if webView.url == nil || webView.url?.absoluteString == "about:blank" {
+            loadContent()
+        }
+    }
+    
+    private func showOfflinePage() {
+        isOfflineMode = true
+        webView.loadHTMLString(offlineHTML, baseURL: nil)
+    }
+    
+    // MARK: - WebView Setup
+    
+    private func setupWebView() {
+        // Clear old web view if exists
+        if let oldWebView = view.subviews.first(where: { $0 is WKWebView }) {
+            oldWebView.removeFromSuperview()
+        }
+        
+        // Create new web view with configuration
+        webView = WKWebView(frame: view.bounds, configuration: webViewConfiguration)
+        webView.autoresizingMask = [.width, .height]
+        webView.navigationDelegate = self
+        webView.uiDelegate = self
+        webView.configuration.userContentController.add(self, name: "consoleLog")
+        webView.configuration.userContentController.add(self, name: "retry")
+        
+        // Add to view hierarchy
+        view.addSubview(webView)
+        
+        // Load initial content
+        loadContent()
+    }
+    
+    private func loadContent() {
+        if NetworkReachability.shared.isConnected {
+            isOfflineMode = false
+            let userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Safari/605.1.15"
+            webView.customUserAgent = userAgent
+            
+            // Try to load from cache first, then fall back to network
+            let request = URLRequest(url: URL(string: webUrl)!, 
+                                  cachePolicy: .returnCacheDataElseLoad, 
+                                  timeoutInterval: 10)
+            webView.load(request)
+        } else {
+            showOfflinePage()
+        }
+    }
+    }
+    
+    @IBAction func openSettings(_ sender: Any) {
+        settingsController.showWindow(sender: sender, webView: webView)
+    }
+    
+    // MARK: - WKNavigationDelegate
+    
+    @MainActor
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping @Sendable (WKNavigationActionPolicy) -> Void) {
+        guard let url = navigationAction.request.url else {
+            decisionHandler(.cancel)
+            return
+        }
+        
+        // Handle Google OAuth and Gmail URLs within the app
+        if url.host?.contains("google.com") == true ||
+           url.host?.contains("accounts.google.") == true ||
+           url.host?.contains("mail.google.") == true ||
+           url.host?.contains("inbox.google.") == true {
+            decisionHandler(.allow)
+            return
+        }
+        
+        // Handle other http/https links
+        if url.absoluteString.hasPrefix("http") {
+            if navigationAction.navigationType == .linkActivated {
+                NSWorkspace.shared.open(url)
+                decisionHandler(.cancel)
+                return
+            }
+            decisionHandler(.allow)
+            return
+        }
+        
+        // Handle other URL schemes (mailto:, tel:, etc.)
+        if url.scheme != nil && url.scheme != "about" {
+            NSWorkspace.shared.open(url)
+            decisionHandler(.cancel)
+            return
+        }
+        
+        decisionHandler(.allow)
+    }
+    
+    // MARK: - WKUIDelegate
+    
+    func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        if let url = navigationAction.request.url {
+            NSWorkspace.shared.open(url)
+        }
+        return nil
+    }
+    
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        if let path = Bundle.main.path(forResource: "gInboxTweaks", ofType: "js", inDirectory: "Assets") {
+            if let jsString = try? String(contentsOfFile: path, encoding: .utf8) {
+                webView.evaluateJavaScript(jsString, completionHandler: nil)
+                
+                if let hangoutsMode = Preferences.getString(key: "hangoutsMode") {
+                    let js = String(format: "console.log('test'); updateHangoutsMode(%@)", hangoutsMode)
+                    webView.evaluateJavaScript(js, completionHandler: nil)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Actions
+    
+    @IBAction func openSettings(_ sender: Any) {
+        settingsController.showWindow(self)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+    
+    // MARK: - WKNavigationDelegate
+    
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        guard let url = navigationAction.request.url else {
+            decisionHandler(.cancel)
+            return
+        }
+        
+        // Handle Google OAuth and Gmail URLs within the app
+        if url.host?.contains("google.com") == true ||
+           url.host?.contains("accounts.google.") == true ||
+           url.host?.contains("mail.google.") == true ||
+           url.host?.contains("inbox.google.") == true {
+            decisionHandler(.allow)
+            return
+        }
+        
+        // Handle other http/https links
+        if url.absoluteString.hasPrefix("http") {
+            if navigationAction.navigationType == .linkActivated {
+                NSWorkspace.shared.open(url)
+                decisionHandler(.cancel)
+                return
+            }
+            decisionHandler(.allow)
+            return
+        }
+        
+        // Handle other URL schemes (mailto:, tel:, etc.)
+        if url.scheme != nil && url.scheme != "about" {
+            NSWorkspace.shared.open(url)
+            decisionHandler(.cancel)
+            return
+        }
+        
+        decisionHandler(.allow)
+    }
+    
+    // MARK: - WKScriptMessageHandler
+    
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        if message.name == "consoleLog", let messageBody = message.body as? String {
+            NSLog("[JS] -> %@", messageBody)
+        }
+    }
+    
+    // JavaScript console logging
+    func injectConsoleLogging() {
+        let consoleLogFunction = """
+        console.log = function(message) {
+            window.webkit.messageHandlers.consoleLog.postMessage(message);
+        };
+        
+        // Add retry handler for offline mode
+        window.retryConnection = function() {
+            window.webkit.messageHandlers.retry.postMessage('retry');
+        };
+        """
+        
+        let userScript = WKUserScript(source: consoleLogFunction,
+                                    injectionTime: .atDocumentStart,
+                                    forMainFrameOnly: true)
+        webView.configuration.userContentController.addUserScript(userScript)
+    }
+    
+    // Inject custom JavaScript
+    func injectCustomScripts() {
+        if let path = Bundle.main.path(forResource: "gInboxTweaks", ofType: "js", inDirectory: "Assets") {
+            do {
+                let jsString = try String(contentsOfFile: path, encoding: .utf8)
+                let userScript = WKUserScript(source: jsString,
+                                            injectionTime: .atDocumentEnd,
+                                            forMainFrameOnly: true)
+                webView.configuration.userContentController.addUserScript(userScript)
+                
+                if let hangoutsMode = Preferences.getString(key: "hangoutsMode") {
+                    let hangoutsScript = "updateHangoutsMode(\(hangoutsMode));"
+                    webView.evaluateJavaScript(hangoutsScript, completionHandler: nil)
+                }
+            } catch {
+                print("Failed to load gInboxTweaks.js: \(error)")
+            }
+        }
+    }
+    
+}

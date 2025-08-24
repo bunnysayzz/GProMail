@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <channel>
+        <title>GProMail Changelog</title>
+        <link>https://your-domain.com/gpromail-appcast.xml</link>
+        <description>Most recent changes with links to updates.</description>
+        <language>en</language>
+        
+        <!-- Example entry - replace with actual release information -->
+        <item>
+            <title>Version 0.2.3</title>
+            <link>https://your-domain.com/releases/GProMail-0.2.3.dmg</link>
+            <sparkle:version>0.2.3</sparkle:version>
+            <sparkle:shortVersionString>0.2.3</sparkle:shortVersionString>
+            <description><![CDATA[
+                <ul>
+                    <li>Modern Sparkle updates with EdDSA signing</li>
+                    <li>Enhanced Gmail integration</li>
+                    <li>Bug fixes and performance improvements</li>
+                </ul>
+            ]]></description>
+            <pubDate>Sat, 24 Aug 2024 10:00:00 +0000</pubDate>
+            <enclosure 
+                url="https://your-domain.com/releases/GProMail-0.2.3.dmg" 
+                sparkle:version="0.2.3" 
+                sparkle:shortVersionString="0.2.3" 
+                sparkle:edSignature="SIGNATURE_WILL_BE_GENERATED_BY_SIGN_UPDATE_TOOL"
+                length="FILE_SIZE_IN_BYTES" 
+                type="application/octet-stream" />
+        </item>
+    </channel>
+</rss> 
