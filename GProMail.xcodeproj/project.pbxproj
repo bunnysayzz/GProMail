@@ -16,6 +16,7 @@
 		116BA11F1A0FD630006CB899 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 116BA11E1A0FD630006CB899 /* AppDelegate.swift */; };
 		11AA9DE11A11E1A500E90DD5 /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11AA9DE01A11E1A500E90DD5 /* Preferences.swift */; };
 		11AA9DE31A11EC4F00E90DD5 /* WebViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11AA9DE21A11EC4F00E90DD5 /* WebViewController.swift */; };
+		11TB1234567890AB1234567 /* TopBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11TB1234567890AB1234568 /* TopBarView.swift */; };
 		11B7E5701A0D646800F8F21F /* Settings.xib in Resources */ = {isa = PBXBuildFile; fileRef = 11B7E56E1A0D646800F8F21F /* Settings.xib */; };
 		11B7E5751A0D648400F8F21F /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 11B7E5731A0D648400F8F21F /* MainMenu.xib */; };
 		11C084791A0D55BF0063B791 /* Sparkle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 11C084781A0D55BF0063B791 /* Sparkle.framework */; };
@@ -62,6 +63,7 @@
 		116BA11E1A0FD630006CB899 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		11AA9DE01A11E1A500E90DD5 /* Preferences.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Preferences.swift; sourceTree = "<group>"; };
 		11AA9DE21A11EC4F00E90DD5 /* WebViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WebViewController.swift; sourceTree = "<group>"; };
+		11TB1234567890AB1234568 /* TopBarView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TopBarView.swift; sourceTree = "<group>"; };
 		11B7E56E1A0D646800F8F21F /* Settings.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = Settings.xib; sourceTree = "<group>"; };
 		11B7E5731A0D648400F8F21F /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
 		11C084781A0D55BF0063B791 /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Sparkle.framework; sourceTree = "<group>"; };
@@ -164,6 +166,7 @@
 			children = (
 				116BA11E1A0FD630006CB899 /* AppDelegate.swift */,
 				11AA9DE21A11EC4F00E90DD5 /* WebViewController.swift */,
+				11TB1234567890AB1234568 /* TopBarView.swift */,
 				11B7E5731A0D648400F8F21F /* MainMenu.xib */,
 			);
 			name = MainMenu;
@@ -285,6 +288,7 @@
 				116BA11F1A0FD630006CB899 /* AppDelegate.swift in Sources */,
 				116BA11D1A0FCF36006CB899 /* Settings.swift in Sources */,
 				11AA9DE31A11EC4F00E90DD5 /* WebViewController.swift in Sources */,
+				11TB1234567890AB1234567 /* TopBarView.swift in Sources */,
 				11AA9DE11A11E1A500E90DD5 /* Preferences.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

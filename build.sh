@@ -137,8 +137,10 @@ export_app() {
     local archive_path="${ARCHIVE_DIR}/${PROJECT_NAME}.xcarchive"
     local export_plist="${BUILD_DIR}/ExportOptions.plist"
     
-    # Create export options plist
-    cat > "${export_plist}" << EOF
+    # Create export options plist based on whether we have signing identity
+    if [ -n "$DEVELOPER_ID_APPLICATION" ]; then
+        # Export for Developer ID distribution
+        cat > "${export_plist}" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -147,8 +149,10 @@ export_app() {
     <string>developer-id</string>
     <key>teamID</key>
     <string>$(security find-identity -v -p codesigning | grep "$DEVELOPER_ID_APPLICATION" | head -1 | sed 's/.*(\([^)]*\)).*/\1/' || echo "")</string>
-    ${DEVELOPER_ID_APPLICATION:+<key>signingStyle</key><string>manual</string>}
-    ${DEVELOPER_ID_APPLICATION:+<key>signingCertificate</key><string>$DEVELOPER_ID_APPLICATION</string>}
+    <key>signingStyle</key>
+    <string>manual</string>
+    <key>signingCertificate</key>
+    <string>$DEVELOPER_ID_APPLICATION</string>
     <key>stripSwiftSymbols</key>
     <true/>
     <key>thinning</key>
@@ -156,12 +160,29 @@ export_app() {
 </dict>
 </plist>
 EOF
+    else
+        # Export without signing (mac application)
+        cat > "${export_plist}" << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>mac-application</string>
+    <key>stripSwiftSymbols</key>
+    <true/>
+    <key>thinning</key>
+    <string>&lt;none&gt;</string>
+</dict>
+</plist>
+EOF
+    fi
     
     xcodebuild -exportArchive \
         -archivePath "${archive_path}" \
         -exportPath "${EXPORT_DIR}" \
         -exportOptionsPlist "${export_plist}" \
-        | xcpretty || exit 1
+        2>&1 | (xcpretty 2>/dev/null || cat) || exit 1
     
     log_success "App exported successfully"
 }
@@ -216,10 +237,16 @@ notarize_app() {
 create_dmg() {
     log_info "Creating DMG..."
     
+    # Clean up any existing DMG files in root folder
+    if ls "${PROJECT_ROOT}"/GProMail-*.dmg 1> /dev/null 2>&1; then
+        log_info "Removing existing DMG files..."
+        rm -f "${PROJECT_ROOT}"/GProMail-*.dmg
+    fi
+    
     local app_path="${EXPORT_DIR}/${APP_NAME}.app"
     local version=$(defaults read "${app_path}/Contents/Info.plist" CFBundleShortVersionString)
     local dmg_name="GProMail-${version}.dmg"
-    local dmg_path="${DIST_DIR}/${dmg_name}"
+    local dmg_path="${PROJECT_ROOT}/${dmg_name}"  # Changed to root folder
     
     # Copy app to DMG staging directory
     cp -R "${app_path}" "${DMG_DIR}/"
@@ -249,7 +276,7 @@ create_dmg() {
         log_success "DMG signed"
     fi
     
-    log_success "DMG created: ${dmg_path}"
+    log_success "DMG created in root folder: ${dmg_name}"
     
     # Display file info
     ls -lh "${dmg_path}"
@@ -387,7 +414,10 @@ main() {
     log_success "Build process completed successfully!"
     log_info "Output files:"
     log_info "  App: ${EXPORT_DIR}/${APP_NAME}.app"
-    log_info "  DMG: ${DIST_DIR}/GProMail-*.dmg"
+    
+    # Get the actual DMG filename with version
+    local version=$(defaults read "${EXPORT_DIR}/${APP_NAME}.app/Contents/Info.plist" CFBundleShortVersionString)
+    log_info "  DMG: ${PROJECT_ROOT}/GProMail-${version}.dmg"
     
     # Display signing verification
     if [ -n "$DEVELOPER_ID_APPLICATION" ]; then
