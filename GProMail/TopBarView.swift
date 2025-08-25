@@ -12,8 +12,13 @@ class TopBarView: NSView {
     
     private var titleLabel: NSTextField!
     private var appIconView: NSImageView!
-    private var githubButton: NSButton!
+    private var homeButton: NSView!
+    private var homeButtonBackground: NSView!
+    private var trackingArea: NSTrackingArea?
+    private var isNavigating: Bool = false
+    private var settingsButton: NSButton!
     private var refreshButton: NSButton!
+    private var githubButton: NSButton!
     private var gradientLayer: CAGradientLayer?
     weak var webView: WKWebView?
     
@@ -30,6 +35,20 @@ class TopBarView: NSView {
     private func setupView() {
         wantsLayer = true
         
+        setupGradient()
+        setupHomeButton()
+        setupSettingsButton()
+        setupRefreshButton()
+        setupGitHubButton()
+        setupConstraints()
+    }
+    
+    override func layout() {
+        super.layout()
+        gradientLayer?.frame = bounds
+    }
+    
+    private func setupGradient() {
         // Create gradient background
         let gradient = CAGradientLayer()
         gradient.colors = [
@@ -40,36 +59,30 @@ class TopBarView: NSView {
         gradient.endPoint = CGPoint(x: 0, y: 1)
         layer?.addSublayer(gradient)
         gradientLayer = gradient
-        
-        setupAppIcon()
-        setupTitleLabel()
-        setupGitHubButton()
-        setupRefreshButton()
-        setupConstraints()
     }
     
-    override func layout() {
-        super.layout()
-        gradientLayer?.frame = bounds
-    }
-    
-    private func setupAppIcon() {
-        appIconView = NSImageView()
-        appIconView.translatesAutoresizingMaskIntoConstraints = false
+    private func setupHomeButton() {
+        homeButtonBackground = NSView()
+        homeButtonBackground.translatesAutoresizingMaskIntoConstraints = false
+        homeButtonBackground.wantsLayer = true
+        homeButtonBackground.layer?.backgroundColor = NSColor.clear.cgColor
         
         // Get the app icon from the bundle
         if let appIcon = NSApp.applicationIconImage {
+            appIconView = NSImageView()
+            appIconView.translatesAutoresizingMaskIntoConstraints = false
             appIconView.image = appIcon
+            appIconView.imageScaling = .scaleProportionallyUpOrDown
+            homeButtonBackground.addSubview(appIconView)
         } else {
             // Fallback to bundle icon
+            appIconView = NSImageView()
+            appIconView.translatesAutoresizingMaskIntoConstraints = false
             appIconView.image = NSImage(named: "AppIcon")
+            appIconView.imageScaling = .scaleProportionallyUpOrDown
+            homeButtonBackground.addSubview(appIconView)
         }
         
-        appIconView.imageScaling = .scaleProportionallyUpOrDown
-        addSubview(appIconView)
-    }
-    
-    private func setupTitleLabel() {
         titleLabel = NSTextField()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.stringValue = "GProMail"
@@ -79,7 +92,155 @@ class TopBarView: NSView {
         titleLabel.backgroundColor = NSColor.clear
         titleLabel.font = NSFont.systemFont(ofSize: 16, weight: .medium)
         titleLabel.textColor = NSColor.labelColor
-        addSubview(titleLabel)
+        homeButtonBackground.addSubview(titleLabel)
+        
+        homeButton = NSView()
+        homeButton.translatesAutoresizingMaskIntoConstraints = false
+        homeButton.wantsLayer = true
+        homeButton.layer?.backgroundColor = NSColor.clear.cgColor
+        homeButton.addSubview(homeButtonBackground)
+        addSubview(homeButton)
+        
+        // Set up premium styling for home button
+        setupHomeButtonStyling()
+        setupHomeButtonTracking()
+    }
+    
+    private func setupHomeButtonStyling() {
+        // Premium rounded button styling
+        homeButton.wantsLayer = true
+        homeButton.layer?.cornerRadius = 8
+        homeButton.layer?.masksToBounds = true
+        
+        // Subtle background with transparency
+        homeButtonBackground.wantsLayer = true
+        homeButtonBackground.layer?.backgroundColor = NSColor.controlBackgroundColor.withAlphaComponent(0.1).cgColor
+        homeButtonBackground.layer?.cornerRadius = 6
+        homeButtonBackground.layer?.masksToBounds = true
+        
+        // Add subtle border
+        homeButtonBackground.layer?.borderWidth = 0.5
+        homeButtonBackground.layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.3).cgColor
+    }
+    
+    private func setupHomeButtonTracking() {
+        // Remove existing tracking area if any
+        if let existingTrackingArea = trackingArea {
+            homeButton.removeTrackingArea(existingTrackingArea)
+        }
+        
+        // Create new tracking area for hover effects
+        trackingArea = NSTrackingArea(
+            rect: homeButton.bounds,
+            options: [.activeInKeyWindow, .mouseEnteredAndExited, .mouseMoved],
+            owner: self,
+            userInfo: nil
+        )
+        homeButton.addTrackingArea(trackingArea!)
+        
+        // Add click gesture recognizer
+        let clickRecognizer = NSClickGestureRecognizer(target: self, action: #selector(homeButtonClicked))
+        homeButton.addGestureRecognizer(clickRecognizer)
+    }
+    
+    override func mouseEntered(with event: NSEvent) {
+        super.mouseEntered(with: event)
+        
+        // Smooth hover animation
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.2
+            context.allowsImplicitAnimation = true
+            
+            // Premium hover effect with subtle shadow and background
+            homeButtonBackground.layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.15).cgColor
+            homeButtonBackground.layer?.borderColor = NSColor.controlAccentColor.withAlphaComponent(0.4).cgColor
+            homeButtonBackground.layer?.shadowOpacity = 0.1
+            homeButtonBackground.layer?.shadowOffset = CGSize(width: 0, height: 1)
+            homeButtonBackground.layer?.shadowRadius = 2
+            homeButtonBackground.layer?.shadowColor = NSColor.black.cgColor
+        }
+    }
+    
+    override func mouseExited(with event: NSEvent) {
+        super.mouseExited(with: event)
+        
+        // Smooth exit animation
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.2
+            context.allowsImplicitAnimation = true
+            
+            // Return to normal state
+            homeButtonBackground.layer?.backgroundColor = NSColor.controlBackgroundColor.withAlphaComponent(0.1).cgColor
+            homeButtonBackground.layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.3).cgColor
+            homeButtonBackground.layer?.shadowOpacity = 0
+        }
+    }
+    
+    @objc private func homeButtonClicked() {
+        // Prevent multiple rapid clicks
+        guard !isNavigating else {
+            print("🏠 Navigation already in progress...")
+            return
+        }
+        
+        isNavigating = true
+        
+        // Immediate visual feedback - show button is pressed
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.05
+            context.allowsImplicitAnimation = true
+            
+            // Immediate feedback: darken button and scale down
+            homeButtonBackground.layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.3).cgColor
+            homeButtonBackground.layer?.transform = CATransform3DMakeScale(0.92, 0.92, 1.0)
+        }
+        
+        // Navigate to Gmail home/inbox
+        if let webView = webView {
+            let homeURL = "https://mail.google.com/mail/u/0/#inbox"
+            if let url = URL(string: homeURL) {
+                let request = URLRequest(url: url)
+                webView.load(request)
+                print("🏠 Navigating to Gmail home: \(homeURL)")
+            }
+        }
+        
+        // Reset visual state and enable clicking again after delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.15
+                context.allowsImplicitAnimation = true
+                
+                // Return to normal scale and color
+                self.homeButtonBackground.layer?.backgroundColor = NSColor.controlBackgroundColor.withAlphaComponent(0.1).cgColor
+                self.homeButtonBackground.layer?.transform = CATransform3DIdentity
+            }
+        }
+        
+        // Allow clicking again after reasonable delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.isNavigating = false
+        }
+    }
+    
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        setupHomeButtonTracking()
+    }
+    
+    private func setupSettingsButton() {
+        settingsButton = NSButton()
+        settingsButton.translatesAutoresizingMaskIntoConstraints = false
+        settingsButton.isBordered = false
+        settingsButton.bezelStyle = .inline
+        settingsButton.target = self
+        settingsButton.action = #selector(openSettings)
+        
+        // Use user's exact settings SVG
+        let settingsImage = createImageFromUserSVG(userSettingsSVG())
+        settingsButton.image = settingsImage
+        settingsButton.toolTip = "Settings"
+        addSubview(settingsButton)
     }
     
     private func setupGitHubButton() {
@@ -114,27 +275,45 @@ class TopBarView: NSView {
     
     private func setupConstraints() {
         NSLayoutConstraint.activate([
-            // App icon - left side
-            appIconView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            appIconView.centerYAnchor.constraint(equalTo: centerYAnchor),
+            // Home button - left side
+            homeButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            homeButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            homeButton.widthAnchor.constraint(equalToConstant: 140), // Increased width for full "GProMail" text
+            homeButton.heightAnchor.constraint(equalToConstant: 36), // Increased height for better button feel
+            
+            // Home button background - inside home button
+            homeButtonBackground.leadingAnchor.constraint(equalTo: homeButton.leadingAnchor, constant: 6),
+            homeButtonBackground.centerYAnchor.constraint(equalTo: homeButton.centerYAnchor),
+            homeButtonBackground.widthAnchor.constraint(equalToConstant: 128), // Increased background width
+            homeButtonBackground.heightAnchor.constraint(equalToConstant: 32), // Increased background height
+            
+            // App icon - inside home button background
+            appIconView.leadingAnchor.constraint(equalTo: homeButtonBackground.leadingAnchor, constant: 10),
+            appIconView.centerYAnchor.constraint(equalTo: homeButtonBackground.centerYAnchor),
             appIconView.widthAnchor.constraint(equalToConstant: 24),
             appIconView.heightAnchor.constraint(equalToConstant: 24),
             
-            // Title label - next to app icon
-            titleLabel.leadingAnchor.constraint(equalTo: appIconView.trailingAnchor, constant: 8),
-            titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+            // Title label - inside home button background
+            titleLabel.leadingAnchor.constraint(equalTo: appIconView.trailingAnchor, constant: 10),
+            titleLabel.centerYAnchor.constraint(equalTo: homeButtonBackground.centerYAnchor),
+            
+            // Settings button - right side, left of refresh
+            settingsButton.trailingAnchor.constraint(equalTo: refreshButton.leadingAnchor, constant: -8),
+            settingsButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            settingsButton.widthAnchor.constraint(equalToConstant: 30),
+            settingsButton.heightAnchor.constraint(equalToConstant: 30),
+            
+            // Refresh button - right side, left of GitHub
+            refreshButton.trailingAnchor.constraint(equalTo: githubButton.leadingAnchor, constant: -8),
+            refreshButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            refreshButton.widthAnchor.constraint(equalToConstant: 30),
+            refreshButton.heightAnchor.constraint(equalToConstant: 30),
             
             // GitHub button - right edge
             githubButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             githubButton.centerYAnchor.constraint(equalTo: centerYAnchor),
             githubButton.widthAnchor.constraint(equalToConstant: 30),
-            githubButton.heightAnchor.constraint(equalToConstant: 30),
-            
-            // Refresh button - left of GitHub button
-            refreshButton.trailingAnchor.constraint(equalTo: githubButton.leadingAnchor, constant: -8),
-            refreshButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-            refreshButton.widthAnchor.constraint(equalToConstant: 30),
-            refreshButton.heightAnchor.constraint(equalToConstant: 30)
+            githubButton.heightAnchor.constraint(equalToConstant: 30)
         ])
     }
     
@@ -200,5 +379,20 @@ class TopBarView: NSView {
           <path d="M116 84 L108 82 L111 90 Z" fill="white"/>
         </svg>
         """
+    }
+    
+    private func userSettingsSVG() -> String {
+        return """
+        <svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="48" height="48" fill="white" fill-opacity="0.01"/>
+          <path d="M18.2838 43.1712C14.9327 42.1735 11.9498 40.3212 9.58787 37.8669C10.469 36.8226 11 35.4733 11 34C11 30.6863 8.31371 28 5 28C4.79955 28 4.60139 28.0098 4.40599 28.029C4.13979 26.7276 4 25.3801 4 24C4 21.9094 4.32077 19.8937 4.91579 17.9994C4.94381 17.9998 4.97188 18 5 18C8.31371 18 11 15.3137 11 12C11 11.0487 10.7786 10.1491 10.3846 9.34999C12.6975 7.19937 15.5205 5.5899 18.6521 4.72302C19.6444 6.66807 21.6667 8.00001 24 8.00001C26.3333 8.00001 28.3556 6.66807 29.3479 4.72302C32.4795 5.5899 35.3025 7.19937 37.6154 9.34999C37.2214 10.1491 37 11.0487 37 12C37 15.3137 39.6863 18 43 18C43.0281 18 43.0562 17.9998 43.0842 17.9994C43.6792 19.8937 44 21.9094 44 24C44 25.3801 43.8602 26.7276 43.594 28.029C43.3986 28.0098 43.2005 28 43 28C39.6863 28 37 30.6863 37 34C37 35.4733 37.531 36.8226 38.4121 37.8669C36.0502 40.3212 33.0673 42.1735 29.7162 43.1712C28.9428 40.7518 26.676 39 24 39C21.324 39 19.0572 40.7518 18.2838 43.1712Z" fill="#2F88FF" stroke="#000000" stroke-width="4" stroke-linejoin="round"/>
+          <path d="M24 31C27.866 31 31 27.866 31 24C31 20.134 27.866 17 24 17C20.134 17 17 20.134 17 24C17 27.866 20.134 31 24 31Z" fill="#43CCF8" stroke="white" stroke-width="4" stroke-linejoin="round"/>
+        </svg>
+        """
+    }
+    
+    @objc private func openSettings() {
+        // Settings functionality will be added later
+        print("Settings button clicked - functionality will be added later")
     }
 } 
