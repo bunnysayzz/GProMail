@@ -11,6 +11,7 @@ import WebKit
 class TopBarView: NSView {
     
     private var titleLabel: NSTextField!
+    private var appIconView: NSImageView!
     private var githubButton: NSButton!
     private var refreshButton: NSButton!
     private var gradientLayer: CAGradientLayer?
@@ -40,6 +41,7 @@ class TopBarView: NSView {
         layer?.addSublayer(gradient)
         gradientLayer = gradient
         
+        setupAppIcon()
         setupTitleLabel()
         setupGitHubButton()
         setupRefreshButton()
@@ -51,10 +53,26 @@ class TopBarView: NSView {
         gradientLayer?.frame = bounds
     }
     
+    private func setupAppIcon() {
+        appIconView = NSImageView()
+        appIconView.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Get the app icon from the bundle
+        if let appIcon = NSApp.applicationIconImage {
+            appIconView.image = appIcon
+        } else {
+            // Fallback to bundle icon
+            appIconView.image = NSImage(named: "AppIcon")
+        }
+        
+        appIconView.imageScaling = .scaleProportionallyUpOrDown
+        addSubview(appIconView)
+    }
+    
     private func setupTitleLabel() {
         titleLabel = NSTextField()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.stringValue = "GProMail for Gmail"
+        titleLabel.stringValue = "GProMail"
         titleLabel.isEditable = false
         titleLabel.isSelectable = false
         titleLabel.isBordered = false
@@ -96,8 +114,14 @@ class TopBarView: NSView {
     
     private func setupConstraints() {
         NSLayoutConstraint.activate([
-            // Title label - left side
-            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            // App icon - left side
+            appIconView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            appIconView.centerYAnchor.constraint(equalTo: centerYAnchor),
+            appIconView.widthAnchor.constraint(equalToConstant: 24),
+            appIconView.heightAnchor.constraint(equalToConstant: 24),
+            
+            // Title label - next to app icon
+            titleLabel.leadingAnchor.constraint(equalTo: appIconView.trailingAnchor, constant: 8),
             titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
             
             // GitHub button - right edge
