@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <channel>
+        <title>GProMail Updates</title>
+        <link>https://bunnysayzz.github.io/GProMail/appcast.xml</link>
+        <description>GProMail - Gmail Desktop Client Updates</description>
+        <language>en</language>
+        
+        <item>
+            <title>Version 0.2.3</title>
+            <link>https://github.com/bunnysayzz/GProMail/releases/latest</link>
+            <sparkle:version>25</sparkle:version>
+            <sparkle:shortVersionString>0.2.3</sparkle:shortVersionString>
+            <description><![CDATA[
+                <h2>GProMail 0.2.3</h2>
+                <ul>
+                    <li>Modern Sparkle updates with EdDSA signing</li>
+                    <li>Enhanced Gmail integration</li>
+                    <li>Bug fixes and performance improvements</li>
+                    <li>Fixed code signing issues</li>
+                </ul>
+            ]]></description>
+            <pubDate>Mon, 26 Aug 2024 19:00:00 +0000</pubDate>
+            <enclosure 
+                url="https://github.com/bunnysayzz/GProMail/releases/download/v0.2.3/GProMail-0.2.3.dmg" 
+                sparkle:version="25" 
+                sparkle:shortVersionString="0.2.3" 
+                sparkle:edSignature="czw8HU7Zgf2TIsmtc1XD+/GBuGEQ1xOI9RLUzxct12dbOhsNhnCYnSwrNfet0rA+vwynB/hJMbJlB63GB5hlAQ=="
+                length="2568544" 
+                type="application/octet-stream" />
+        </item>
+    </channel>
+</rss> 
