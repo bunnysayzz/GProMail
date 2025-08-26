@@ -14,6 +14,7 @@ SCHEME_NAME="GProMail"
 CONFIGURATION="Release"
 
 # Signing configuration - Set these to your actual identities
+# Leave empty to build without code signing (for development)
 DEVELOPER_ID_APPLICATION=""  # e.g., "Developer ID Application: Your Name (XXXXXXXXXX)"
 DEVELOPER_ID_INSTALLER=""    # e.g., "Developer ID Installer: Your Name (XXXXXXXXXX)"
 

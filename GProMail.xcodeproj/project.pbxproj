@@ -22,7 +22,7 @@
 		11C084791A0D55BF0063B791 /* Sparkle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 11C084781A0D55BF0063B791 /* Sparkle.framework */; };
 		11C0847B1A0D56160063B791 /* Sparkle.framework in Copy Files */ = {isa = PBXBuildFile; fileRef = 11C084781A0D55BF0063B791 /* Sparkle.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		11E9F0021A1D43250078D6F2 /* gInboxTweaks.js in Resources */ = {isa = PBXBuildFile; fileRef = 11E9F0011A1D43250078D6F2 /* gInboxTweaks.js */; };
-		11EE37C81A1256B500782865 /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = 11EE37C71A1256B500782865 /* dsa_pub.pem */; };
+						11EE37C81A1256B500782865 /* eddsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = 11EE37C71A1256B500782865 /* eddsa_pub.pem */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -68,7 +68,8 @@
 		11B7E5731A0D648400F8F21F /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
 		11C084781A0D55BF0063B791 /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Sparkle.framework; sourceTree = "<group>"; };
 		11E9F0011A1D43250078D6F2 /* gInboxTweaks.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = gInboxTweaks.js; sourceTree = "<group>"; };
-		11EE37C71A1256B500782865 /* dsa_pub.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = dsa_pub.pem; sourceTree = "<group>"; };
+		11EE37C71A1256B500782865 /* eddsa_pub.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = eddsa_pub.pem; sourceTree = "<group>"; };
+		11EE37C81A1256B500782866 /* GProMail-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "GProMail-Bridging-Header.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -127,7 +128,8 @@
 		1165850E1A0A523F005D5596 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
-				11EE37C71A1256B500782865 /* dsa_pub.pem */,
+				11EE37C71A1256B500782865 /* eddsa_pub.pem */,
+				11EE37C81A1256B500782866 /* GProMail-Bridging-Header.h */,
 				114C2EED1A0FF1DA00BE97FB /* main.swift */,
 				1165850F1A0A523F005D5596 /* Info.plist */,
 				1112A9351A1CF41400E4F882 /* Defaults.plist */,
@@ -263,7 +265,7 @@
 			files = (
 				11E9F0021A1D43250078D6F2 /* gInboxTweaks.js in Resources */,
 				11B7E5701A0D646800F8F21F /* Settings.xib in Resources */,
-				11EE37C81A1256B500782865 /* dsa_pub.pem in Resources */,
+				11EE37C81A1256B500782865 /* eddsa_pub.pem in Resources */,
 				1112A9361A1CF41400E4F882 /* Defaults.plist in Resources */,
 				116585161A0A523F005D5596 /* Images.xcassets in Resources */,
 				11B7E5751A0D648400F8F21F /* MainMenu.xib in Resources */,
@@ -393,35 +395,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_IDENTITY = "Developer ID Application";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)",
-				);
-				INFOPLIST_FILE = GProMail/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
-				OTHER_LDFLAGS = "-Wl,-rpath,@loader_path/../Frameworks";
-				PRODUCT_NAME = "Inbox by Gmail";
-				SDKROOT = macosx;
-				SWIFT_OBJC_BRIDGING_HEADER = "";
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		1165852A1A0A523F005D5596 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_IDENTITY = "Developer ID Application";
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)",
@@ -432,7 +409,32 @@
 				OTHER_LDFLAGS = "-Wl,-rpath,@loader_path/../Frameworks";
 				PRODUCT_NAME = "GProMail";
 				SDKROOT = macosx;
-				SWIFT_OBJC_BRIDGING_HEADER = "";
+				SWIFT_OBJC_BRIDGING_HEADER = "GProMail/GProMail-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		1165852A1A0A523F005D5596 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
+				INFOPLIST_FILE = GProMail/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				OTHER_LDFLAGS = "-Wl,-rpath,@loader_path/../Frameworks";
+				PRODUCT_NAME = "GProMail";
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "GProMail/GProMail-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
